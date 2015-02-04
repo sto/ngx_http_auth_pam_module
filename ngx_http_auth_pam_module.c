@@ -129,11 +129,11 @@ free_resp(int num_msg, struct pam_response *response)
     if (response == NULL)
         return;
     for (i = 0; i < num_msg; i++) {
-        if (response[i]->resp) {
+        if (response[i].resp) {
             /* clear before freeing -- may be a password */
-            bzero(response[i]->resp, strlen(response[i]->resp));
-            free(response[i]->resp);
-            response[i]->resp = NULL;
+            bzero(response[i].resp, strlen(response[i].resp));
+            free(response[i].resp);
+            response[i].resp = NULL;
         }
     }
     free(response);
