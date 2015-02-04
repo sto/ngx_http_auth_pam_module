@@ -1,0 +1,29 @@
+2013-09-17  sto@iti.es
+
+	* Version 1.3.
+	* Added support to export HOST and REQUEST variables to the PAM ENVIRONMENT.
+	  Thanks to Ruben Jenster for the  initial patch, his version is available
+	  from https://github.com/r10r/ngx_http_auth_pam_module; my version uses his
+	  implementation but only if the user sets the ``pam_auth_set_pam_env``
+	  flag.
+	* Fixed bug from http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=+721702
+	  (ngx_module_t commands array should end with a ngx_null_command); the bug
+	  was already fixed on the PAM_ENV patch, but I forgot about it until I went
+	  back to my svn repository to add the debian patch... better latter than
+	  never... ;)
+
+2010-11-15  sto@iti.upv.es
+
+	* Version 1.2.
+	* Fixed possible memory leak when authentication fails, pam_end has to
+	  be called to free memory (thanks to Neil Chintomby).
+
+2009-01-26  sto@iti.upv.es
+
+	* Version 1.1.
+	* Fixed ngx_log_debugX calls, no we use the correct X value on each
+	  call.
+
+2008-09-17  sto@iti.upv.es
+
+	* Initial version (1.0).
