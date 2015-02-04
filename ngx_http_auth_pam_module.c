@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2008-2013 Sergio Talens-Oliag <sto@iti.es>
+ * Copyright (C) 2008-2015 Sergio Talens-Oliag <sto@iti.es>
  *
  * Based on nginx's 'ngx_http_auth_basic_module.c' by Igor Sysoev and apache's
  * 'mod_auth_pam.c' by Ingo Luetkebolhe.
  *
- * SVN Id: $Id: ngx_http_auth_pam_module.c 7626 2013-09-17 10:00:49Z sto $
+ * File: ngx_http_auth_pam_module.c
  */
 
 #include <ngx_config.h>
@@ -118,6 +118,27 @@ ngx_module_t  ngx_http_auth_pam_module = {
     NGX_MODULE_V1_PADDING
 };
 
+
+/* 
+ * Function to free PAM_CONV responses if an error is returned.
+ */
+static void
+free_resp(int num_msg, struct pam_response *response)
+{
+    int i;
+    if (response == NULL)
+        return;
+    for (i = 0; i < num_msg; i++) {
+        if (response[i]->resp) {
+            /* clear before freeing -- may be a password */
+            bzero(response[i]->resp, strlen(response[i]->resp));
+            free(response[i]->resp);
+            response[i]->resp = NULL;
+        }
+    }
+    free(response);
+}
+
 /*
  * ngx_auth_pam_talker: supply authentication information to PAM when asked
  *
@@ -161,9 +182,7 @@ ngx_auth_pam_talker(int num_msg, const struct pam_message ** msg,
             response[i].resp = strdup((const char *)uinfo->password.data);
             break;
         default:
-            if (response) {
-                free(response);
-            }
+            free_resp(i, response);
             return PAM_CONV_ERR;
         }
     }
@@ -440,4 +459,4 @@ ngx_http_auth_pam(ngx_conf_t *cf, void *post, void *data)
     return NGX_CONF_OK;
 }
 
-/* SVN Id: $Id: ngx_http_auth_pam_module.c 7626 2013-09-17 10:00:49Z sto $ */
+/* File: ngx_http_auth_pam_module.c */
