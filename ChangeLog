@@ -1,4 +1,4 @@
-2015-01-04  sto@iti.es
+2015-02-04  sto@iti.es
 
 	* Version 1.4.
 	* Cleanup PAM responses on error, the module was not doing it, causing
