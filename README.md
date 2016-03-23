@@ -4,15 +4,17 @@
 
 ### Compilation
 
-When compiling from source build as usual adding the -add-module option:
+When compiling from source build as usual adding the ``--add-module`` option:
 
 	./configure --add-module=$PATH_TO_MODULE
 
-If you are using a Debian GNU/Linux distribution install the nginx-full package;
-the module has been included in the nginx debian package since version 1.1.6-1
-and there are newer packages on the stable distribution (wheezy) and the wheezy
-version is also available from the oldstable backports repository
-(squeeze-backports).
+or if you want to build the module as dynamic use the ``--add-dynamic-module``
+option.
+
+If you are using a Debian GNU/Linux distribution install the ``nginx-full``
+package; the module has been included in the debian package since version
+``1.1.6-1``, so it is available on all stable distributions since the *wheezy*
+release.
 
 ### Configuration
 

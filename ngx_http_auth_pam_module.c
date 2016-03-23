@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2015 Sergio Talens-Oliag <sto@iti.es>
+ * Copyright (C) 2008-2016 Sergio Talens-Oliag <sto@iti.es>
  *
  * Based on nginx's 'ngx_http_auth_basic_module.c' by Igor Sysoev and apache's
  * 'mod_auth_pam.c' by Ingo Luetkebolhe.
