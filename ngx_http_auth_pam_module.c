@@ -341,6 +341,15 @@ ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    /* send client IP address to PAM */
+    char *client_ip_addr = ngx_strncpy_s(r->connection->addr_text, r->pool);
+    if ((rc = pam_set_item(pamh, PAM_RHOST, client_ip_addr)) != PAM_SUCCESS) {
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                      "PAM: Could not set item PAM_RHOST: %s",
+                      pam_strerror(pamh, rc));
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+  }
+
     if (alcf->set_pam_env) {
         add_request_info_to_pam_env(pamh, r);
     }
