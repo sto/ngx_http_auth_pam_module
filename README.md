@@ -75,11 +75,11 @@ If you want use the ``pam_exec.so`` plugin for request based authentication the
 module can add to the PAM environment the ``HOST`` and ``REQUEST`` variables if
 you set the ``auth_pam_set_pam_env`` flag::
 
-  location /pam_exec_protected {
-    auth_pam              "Exec Zone";
-    auth_pam_service_name "nginx_exec";
-    auth_pam_set_pam_env  on;
-  }
+	location /pam_exec_protected {
+	  auth_pam              "Exec Zone";
+	  auth_pam_service_name "nginx_exec";
+	  auth_pam_set_pam_env  on;
+	}
 
 With this configuration if you access an URL like:
 
