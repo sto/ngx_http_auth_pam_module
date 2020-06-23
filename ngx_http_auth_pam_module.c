@@ -182,7 +182,7 @@ ngx_auth_pam_talker(int num_msg, const struct pam_message ** msg,
         case PAM_PROMPT_ECHO_OFF:
             response[i].resp = strdup((const char *)ainfo->password.data);
             break;
-	case PAM_ERROR_MSG:
+        case PAM_ERROR_MSG:
             ngx_log_error(NGX_LOG_ERR, ainfo->log, 0,
                           "PAM: \'%s\'.", msg[i]->msg);
             break;
