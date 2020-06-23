@@ -1,6 +1,14 @@
+2020-06-23  sto@mixinet.net
+
+	* Version 1.5.2.
+	* Log authentication errors as errors instead of debug (patch provided by
+	  Juha Koho, see https://github.com/sto/ngx_http_auth_pam_module/pull/11)
+	* Send client IP address to PAM (patch provided by Marcin Łojewski, see
+	  https://github.com/sto/ngx_http_auth_pam_module/pull/14)
+
 2016-04-06  sto@iti.es
 
-    * Version 1.5.1.
+	* Version 1.5.1.
 	* Fix building alongside other modules in nginx 1.9.11+ (patch provided by
 	  Graham Edgecombe <grahamedgecombe@gmail.com>)
 
