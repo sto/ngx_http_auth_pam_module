@@ -28,9 +28,9 @@ typedef struct {
 
 /* Module configuration struct */
 typedef struct {
-    ngx_str_t   realm;          /* http basic auth realm */
-    ngx_str_t   service_name;   /* pam service name */
-    ngx_flag_t  set_pam_env;    /* flag that indicates if we should export
+    ngx_http_complex_value_t  *realm;       /* http basic auth realm */
+    ngx_str_t                 service_name; /* pam service name */
+    ngx_flag_t                set_pam_env;  /* flag that indicates if we should export
                                    variables to PAM or NOT */
 } ngx_http_auth_pam_loc_conf_t;
 
@@ -40,7 +40,7 @@ static ngx_int_t ngx_http_auth_pam_handler(ngx_http_request_t *r);
 /* Function that authenticates the user -- is the only function that uses PAM */
 static ngx_int_t ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
                                                 ngx_http_auth_pam_ctx_t *ctx,
-                                                ngx_str_t *passwd, void *conf);
+                                                ngx_str_t *passwd, ngx_str_t *realm, void *conf);
 
 static ngx_int_t ngx_http_auth_pam_set_realm(ngx_http_request_t *r,
                                              ngx_str_t *realm);
@@ -52,10 +52,6 @@ static char *ngx_http_auth_pam_merge_loc_conf(ngx_conf_t *cf,
 
 static ngx_int_t ngx_http_auth_pam_init(ngx_conf_t *cf);
 
-static char *ngx_http_auth_pam(ngx_conf_t *cf, void *post, void *data);
-
-static ngx_conf_post_handler_pt  ngx_http_auth_pam_p = ngx_http_auth_pam;
-
 static int ngx_auth_pam_talker(int num_msg, const struct pam_message ** msg,
                                struct pam_response ** resp, void *appdata_ptr);
 
@@ -64,10 +60,10 @@ static ngx_command_t  ngx_http_auth_pam_commands[] = {
     { ngx_string("auth_pam"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF
                         |NGX_CONF_TAKE1,
-      ngx_conf_set_str_slot,
+      ngx_http_set_complex_value_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_auth_pam_loc_conf_t, realm),
-      &ngx_http_auth_pam_p },
+      NULL },
 
     { ngx_string("auth_pam_service_name"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF
@@ -204,26 +200,35 @@ static ngx_int_t
 ngx_http_auth_pam_handler(ngx_http_request_t *r)
 {
     ngx_int_t  rc;
+    ngx_str_t  realm;
     ngx_http_auth_pam_ctx_t  *ctx;
     ngx_http_auth_pam_loc_conf_t  *alcf;
 
     alcf = ngx_http_get_module_loc_conf(r, ngx_http_auth_pam_module);
 
-    if (alcf->realm.len == 0) {
+    if (alcf->realm == NULL) {
+        return NGX_DECLINED;
+    }
+
+    if (ngx_http_complex_value(r, alcf->realm, &realm) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (realm.len == 3 && ngx_strncmp(realm.data, "off", 3) == 0) {
         return NGX_DECLINED;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_auth_pam_module);
 
     if (ctx) {
-        return ngx_http_auth_pam_authenticate(r, ctx, &ctx->passwd, alcf);
+        return ngx_http_auth_pam_authenticate(r, ctx, &ctx->passwd, &realm, alcf);
     }
 
     /* Decode http auth user and passwd, leaving values on the request */
     rc = ngx_http_auth_basic_user(r);
 
     if (rc == NGX_DECLINED) {
-        return ngx_http_auth_pam_set_realm(r, &alcf->realm);
+        return ngx_http_auth_pam_set_realm(r, &realm);
     }
 
     if (rc == NGX_ERROR) {
@@ -231,7 +236,7 @@ ngx_http_auth_pam_handler(ngx_http_request_t *r)
     }
 
     /* Check user & password using PAM */
-    return ngx_http_auth_pam_authenticate(r, ctx, &ctx->passwd, alcf);
+    return ngx_http_auth_pam_authenticate(r, ctx, &ctx->passwd, &realm, alcf);
 }
 
 /**
@@ -281,7 +286,7 @@ static void add_request_info_to_pam_env(pam_handle_t *pamh,
 static ngx_int_t
 ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
                                ngx_http_auth_pam_ctx_t *ctx, ngx_str_t *passwd,
-                               void *conf)
+                               ngx_str_t *realm, void *conf)
 {
     ngx_int_t   rc;
     ngx_http_auth_pam_loc_conf_t  *alcf;
@@ -361,7 +366,7 @@ ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
                       "PAM: user '%s' - not authenticated: %s",
                       ainfo.username.data, pam_strerror(pamh, rc));
         pam_end(pamh, PAM_SUCCESS);
-        return ngx_http_auth_pam_set_realm(r, &alcf->realm);
+        return ngx_http_auth_pam_set_realm(r, realm);
     }   /* endif authenticate */
 
     /* check that the account is healthy */
@@ -370,7 +375,7 @@ ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
                       "PAM: user '%s' - invalid account: %s",
                       ainfo.username.data, pam_strerror(pamh, rc));
         pam_end(pamh, PAM_SUCCESS);
-        return ngx_http_auth_pam_set_realm(r, &alcf->realm);
+        return ngx_http_auth_pam_set_realm(r, realm);
     }
 
     pam_end(pamh, PAM_SUCCESS);
@@ -380,15 +385,31 @@ ngx_http_auth_pam_authenticate(ngx_http_request_t *r,
 static ngx_int_t
 ngx_http_auth_pam_set_realm(ngx_http_request_t *r, ngx_str_t *realm)
 {
+    size_t len;
+    u_char *basic, *p;
+
     r->headers_out.www_authenticate = ngx_list_push(&r->headers_out.headers);
     if (r->headers_out.www_authenticate == NULL) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    len = sizeof("Basic realm=\"\"") - 1 + realm->len;
+
+    basic = ngx_pnalloc(r->pool, len);
+    if (basic == NULL) {
+        r->headers_out.www_authenticate->hash = 0;
+        r->headers_out.www_authenticate = NULL;
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    p = ngx_cpymem(basic, "Basic realm=\"", sizeof("Basic realm=\"") - 1);
+    p = ngx_cpymem(p, realm->data, realm->len);
+    *p = '"';
+
     r->headers_out.www_authenticate->hash = 1;
-    r->headers_out.www_authenticate->key.len = sizeof("WWW-Authenticate") - 1;
-    r->headers_out.www_authenticate->key.data = (u_char *) "WWW-Authenticate";
-    r->headers_out.www_authenticate->value = *realm;
+    ngx_str_set(&r->headers_out.www_authenticate->key, "WWW-Authenticate");
+    r->headers_out.www_authenticate->value.data = basic;
+    r->headers_out.www_authenticate->value.len = len;
 
     return NGX_HTTP_UNAUTHORIZED;
 }
@@ -415,7 +436,7 @@ ngx_http_auth_pam_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_auth_pam_loc_conf_t  *prev = parent;
     ngx_http_auth_pam_loc_conf_t  *conf = child;
 
-    if (conf->realm.data == NULL) {
+    if (conf->realm == NULL) {
         conf->realm = prev->realm;
     }
 
@@ -445,38 +466,6 @@ ngx_http_auth_pam_init(ngx_conf_t *cf)
     *h = ngx_http_auth_pam_handler;
 
     return NGX_OK;
-}
-
-static char *
-ngx_http_auth_pam(ngx_conf_t *cf, void *post, void *data)
-{
-    ngx_str_t  *realm = data;
-
-    size_t   len;
-    u_char  *basic, *p;
-
-    if (ngx_strcmp(realm->data, "off") == 0) {
-        realm->len = 0;
-        realm->data = (u_char *) "";
-
-        return NGX_CONF_OK;
-    }
-
-    len = sizeof("Basic realm=\"") - 1 + realm->len + 1;
-
-    basic = ngx_palloc(cf->pool, len);
-    if (basic == NULL) {
-        return NGX_CONF_ERROR;
-    }
-
-    p = ngx_cpymem(basic, "Basic realm=\"", sizeof("Basic realm=\"") - 1);
-    p = ngx_cpymem(p, realm->data, realm->len);
-    *p = '"';
-
-    realm->len = len;
-    realm->data = basic;
-
-    return NGX_CONF_OK;
 }
 
 /* File: ngx_http_auth_pam_module.c */
