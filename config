@@ -7,6 +7,7 @@ if test -n "$ngx_module_link"; then
     ngx_module_deps=
     ngx_module_srcs="$ngx_addon_dir/ngx_http_auth_pam_module.c"
     ngx_module_libs="-lpam"
+    ngx_module_order="$ngx_module_name ngx_http_access_module"
 
     . auto/module
 else
