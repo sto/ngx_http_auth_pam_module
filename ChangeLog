@@ -1,3 +1,9 @@
+2021-08-23  sto@mixinet.net
+
+	* Version 1.5.3.
+	* Always load after ngx_http_access_module (patch provided by khimaros, see
+	  https://github.com/sto/ngx_http_auth_pam_module/pull/26)
+
 2020-06-23  sto@mixinet.net
 
 	* Version 1.5.2.
