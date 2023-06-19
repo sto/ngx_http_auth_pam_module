@@ -1,3 +1,10 @@
+2023-06-19  sto@mixinet.net
+
+	* Version 1.5.4.
+	* Set next WWW-Authenticate header to NULL to prevent segmentation faults
+	  (patch provided by tanshaoyi, see
+	  https://github.com/sto/ngx_http_auth_pam_module/pull/28).
+
 2021-08-23  sto@mixinet.net
 
 	* Version 1.5.3.
