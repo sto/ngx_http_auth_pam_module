@@ -1,3 +1,9 @@
+2023-06-20  sto@mixinet.net
+
+	* Version 1.5.5.
+	* Update previous patch to apply it only if the nginx version is 1.23.0 or
+	  higher to avoid compilation failures with older versions.
+
 2023-06-19  sto@mixinet.net
 
 	* Version 1.5.4.
